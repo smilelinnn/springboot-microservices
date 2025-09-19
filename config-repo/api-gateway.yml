@@ -1,7 +1,13 @@
 spring:
   application:
     name: api-gateway
+    # Config Server connection
+  config:
+    import: "configserver:http://localhost:8888"
   cloud:
+    config:
+      enabled: true
+      fail-fast: true
     gateway:
       routes:
         - id: employee-service

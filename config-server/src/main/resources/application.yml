@@ -5,16 +5,16 @@ server:
 spring:
   application:
     name: config-server
+  profiles:
+    active: native
 
   # Config Server settings
   cloud:
     config:
       server:
-        # Use Git repository
-        git:
-          uri: https://github.com/smilelinnn/springboot-microservices/config-repo
-          default-label: main  # 或 master，取决于您的默认分支
-          search-paths: config  # 配置文件所在的文件夹
+        # Use local file system
+        native:
+          search-locations: classpath:/config-repo
 
 # 如果不需要可以不写
 # Actuator endpoints for monitoring and management
