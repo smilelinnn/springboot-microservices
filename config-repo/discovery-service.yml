@@ -4,20 +4,29 @@
 spring:
   application:
     name: discovery-service
+  # Config Server connection
+  config:
+    import: "configserver:http://localhost:8888"
+  cloud:
+    config:
+      enabled: true
+      fail-fast: true
 
 server:
   port: 8761
 
-# Eureka Server configuration
+# Eureka 特定配置
 eureka:
+  instance:
+    hostname: localhost
   client:
-    # Don't register with itself
     register-with-eureka: false
-    # Don't fetch registry from other Eureka servers
     fetch-registry: false
-  # Server configuration
+    service-url:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
   server:
     wait-time-in-ms-when-sync-empty: 0
+
 
 # Management endpoints for runtime refresh
 management:

@@ -13,17 +13,14 @@ spring:
   application:
     name: discovery-service
 
-  # Config Server connection
+  # Config Server connection (Spring Cloud 2022.0.x format)
+  config:
+    import: "configserver:http://localhost:8888"
+
   cloud:
     config:
-      # Config Server URL
-      uri: http://localhost:8888
-      # Fail fast if Config Server is not available
+      enabled: true
       fail-fast: true
-      # Profile to use
-      profile: dev
-      # Label (branch in Git, not used for file system)
-      label: master
 
 # Logging for bootstrap phase
 logging:

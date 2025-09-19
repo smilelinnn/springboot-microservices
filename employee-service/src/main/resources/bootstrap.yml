@@ -13,6 +13,10 @@ spring:
   application:
     name: employee-service
 
+  # Config Server connection (Spring Cloud 2022.0.x format)
+  config:
+    import: "configserver:http://localhost:8888"
+
   # Config Server connection
   cloud:
     config:

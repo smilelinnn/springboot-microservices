@@ -2,4 +2,15 @@
 # Most configuration is now loaded from Config Server
 # This file only contains local overrides and fallback values
 
+spring:
+  application:
+    name: department-service
+  # Config Server connection (Spring Cloud 2022.0.x format)
+  config:
+    import: "configserver:http://localhost:8888"
+  cloud:
+    config:
+      enabled: true
+      fail-fast: true
+
 # Local development settings
