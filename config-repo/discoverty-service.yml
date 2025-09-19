@@ -1,0 +1,30 @@
+# Discovery Service (Eureka Server) specific configuration
+# This file contains settings specific to discovery-service
+
+spring:
+  application:
+    name: discovery-service
+
+server:
+  port: 8761
+
+# Eureka Server configuration
+eureka:
+  client:
+    # Don't register with itself
+    register-with-eureka: false
+    # Don't fetch registry from other Eureka servers
+    fetch-registry: false
+  # Server configuration
+  server:
+    wait-time-in-ms-when-sync-empty: 0
+
+# Management endpoints for runtime refresh
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,refresh
+  endpoint:
+    refresh:
+      enabled: true

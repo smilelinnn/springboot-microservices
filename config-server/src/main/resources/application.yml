@@ -1,0 +1,33 @@
+# config-server 默认端口为 8888，可以不写
+server:
+  port: 8888
+
+spring:
+  application:
+    name: config-server
+
+  # Config Server settings
+  cloud:
+    config:
+      server:
+        # Use Git repository
+        git:
+          uri: https://github.com/smilelinnn/springboot-microservices/config-repo
+
+# 如果不需要可以不写
+# Actuator endpoints for monitoring and management
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,refresh,configprops,env
+  endpoint:
+    health:
+      show-details: always
+
+# 如果不需要可以不写
+# Logging configuration
+logging:
+  level:
+    org.springframework.cloud.config: DEBUG
+    com.example.configserver: INFO

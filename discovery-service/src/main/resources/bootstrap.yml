@@ -1,0 +1,32 @@
+# bootstrap.yml 文件用于 config server 连接，即告诉服务如何连接 config server
+# 配置文件优先级（从高到低）
+# 1. bootstrap.yml (最高优先级)（最先加载）
+# 2. config-repo/department-service.yml (Config Server配置)
+# 3. config-repo/application.yml (共享配置)
+# 4. department-service/src/main/resources/application.yml (本地配置)
+# Config Server配置会覆盖本地配置，如果Config Server不可用，才会使用本地配置\
+
+# Bootstrap configuration - loaded before application.yml
+# This file contains configuration needed to connect to Config Server
+
+spring:
+  application:
+    name: discovery-service
+
+  # Config Server connection
+  cloud:
+    config:
+      # Config Server URL
+      uri: http://localhost:8888
+      # Fail fast if Config Server is not available
+      fail-fast: true
+      # Profile to use
+      profile: dev
+      # Label (branch in Git, not used for file system)
+      label: master
+
+# Logging for bootstrap phase
+logging:
+  level:
+    org.springframework.cloud.config: DEBUG
+    org.springframework.cloud.bootstrap: DEBUG

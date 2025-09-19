@@ -1,42 +1,6 @@
-spring:
-  application:
-    name: EMPLOYEE-SERVICE
+# Employee Service Application Configuration
+# Most configuration is now loaded from Config Server
+# This file only contains local overrides and fallback values
 
-  datasource:
-    url: jdbc:postgresql://localhost:5432/postgres
-    username: postgres
-    password: 123456!
-    driver-class-name: org.postgresql.Driver
-
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    properties:
-      hibernate:
-        default_schema: employee
-    open-in-view: false
-
-  flyway:
-    enabled: true
-    locations: classpath:/db/migration
-    schemas: employee
-    default-schema: employee
-    table: flyway_schema_history_employees
-    create-schemas: true
-    baseline-on-migrate: true
-    baseline-version: 0
-    validate-migration-naming: true
-
-server:
-  port: 8081
-
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
+# Local overrides (these will override Config Server values if needed)
+# Uncomment and modify as needed for local development

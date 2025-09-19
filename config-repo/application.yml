@@ -1,0 +1,43 @@
+# Shared default configuration for all services
+# This file contains common settings that apply to all services
+
+# Common server settings
+server:
+  # Default port (can be overridden by individual services)
+  port: 8080
+
+# Common Spring settings
+spring:
+  # Application name (will be overridden by each service)
+  application:
+    name: microservice
+
+  # Common profiles
+  profiles:
+    active: dev
+
+  # Common logging configuration
+  logging:
+    level:
+      root: INFO
+      org.springframework: WARN
+      org.springframework.cloud: INFO
+      com.example: DEBUG
+
+# Common management/actuator settings
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,refresh,configprops,env
+  endpoint:
+    health:
+      show-details: always
+    refresh:
+      enabled: true
+
+# Common feature flags (can be overridden per service)
+features:
+  enable-tracing: true
+  enable-metrics: true
+  enable-caching: false
