@@ -1,4 +1,4 @@
-package com.example.department.web;
+package com.example.department.exception;
 
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.MDC;

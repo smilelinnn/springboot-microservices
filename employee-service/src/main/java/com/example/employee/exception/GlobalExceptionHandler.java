@@ -1,4 +1,4 @@
-package com.example.employee.web;
+package com.example.employee.exception;
 
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.MDC;
@@ -71,6 +71,17 @@ public class GlobalExceptionHandler {
         problemDetail.setProperty("traceId", MDC.get("traceId"));
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
+    }
+
+    @ExceptionHandler(DuplicateEmailException.class)
+    public ResponseEntity<ProblemDetail> handleDuplicateEmail(DuplicateEmailException ex, WebRequest request) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problemDetail.setTitle("Duplicate Email");
+        problemDetail.setProperty("instance", request.getDescription(false).replace("uri=", ""));
+        problemDetail.setProperty("timestamp", Instant.now().toString());
+        problemDetail.setProperty("traceId", MDC.get("traceId"));
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problemDetail);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

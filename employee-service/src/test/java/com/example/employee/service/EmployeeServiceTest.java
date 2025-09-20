@@ -3,6 +3,7 @@ package com.example.employee.service;
 import com.example.employee.client.DepartmentClient;
 import com.example.employee.domain.Employee;
 import com.example.employee.dto.EmployeeDTO;
+import com.example.employee.exception.DuplicateEmailException;
 import com.example.employee.repo.EmployeeRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DisplayNameGeneration;
@@ -34,18 +35,23 @@ public class EmployeeServiceTest {
             "alice@example.com, true"
     })
     @DisplayName("create(): throws when email exists; persists otherwise")
+    // CREATE，参数化测试
     void create_handles_duplicates(String email, boolean duplicate) {
         when(repository.existsByEmail(email)).thenReturn(duplicate);
+        // 负例：邮箱重复，抛出 IllegalArgumentException 异常
         if (duplicate) {
             assertThatThrownBy(() -> service.create(EmployeeDTO.builder()
-                    .firstName("X").lastName("Y").email(email).build()))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .firstName("X").lastName("Y").email(email).build(), null))
+                    .isInstanceOf(DuplicateEmailException.class)
                     .hasMessageContaining("Email already exists");
-        } else {
+        }
+
+        // 正例：邮箱未重复，创建成功
+        else {
             when(repository.save(any(Employee.class)))
                     .thenAnswer(inv -> { Employee e = inv.getArgument(0); e.setId(101L); return e; });
             var out = service.create(EmployeeDTO.builder()
-                    .firstName("X").lastName("Y").email(email).build());
+                    .firstName("X").lastName("Y").email(email).build(), null);
             assertThat(out.getId()).isEqualTo(101L);
         }
     }

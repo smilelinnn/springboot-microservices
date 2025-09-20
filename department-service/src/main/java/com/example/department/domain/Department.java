@@ -18,6 +18,11 @@ public class Department {
     @Column(nullable = false, length = 120)
     private String name;
 
+    @NotBlank(message = "code is required")
+    @Size(max = 20, message = "code must not exceed 20 characters")
+    @Column(nullable = false, length = 20, unique = true)
+    private String code;
+
     @Column(columnDefinition = "text")
     private String description;
 }

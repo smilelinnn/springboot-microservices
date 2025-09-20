@@ -1,18 +1,22 @@
 package com.example.employee.web;
 import com.example.employee.dto.EmployeeDTO;
+import com.example.employee.dto.EmployeeStatsDTO;
 import com.example.employee.service.EmployeeService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -107,29 +111,33 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(EmployeeController.class)
 @DisplayName("EmployeeController (WebMvc slice)")
 public class EmployeeControllerTest {
-    @Autowired MockMvc mvc;
+    @Autowired
+    MockMvc mvc;
+
     @Autowired
     ObjectMapper om;
 
     @MockBean
     EmployeeService service;
 
-
+    // READ 测试
     @Nested
     class List_and_Get {
+        // 负例：HTTP 404，找不到员工数据
         @Test
-        void list_returns_200_and_array() throws Exception {
-            when(service.getAll()).thenReturn(List.of(
-                    EmployeeDTO.builder().id(1L).firstName("Alice").lastName("Nguyen").email("alice@example.com").build()
-            ));
-            mvc.perform(get("/api/v1/employees"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$[0].email").value("alice@example.com"));
+        void get_by_id_not_found_returns_404() throws Exception {
+            when(service.getById(999L, false))
+                    .thenThrow(new jakarta.persistence.EntityNotFoundException("Employee not found"));
+
+            mvc.perform(get("/api/v1/employees/999"))
+                    .andExpect(status().isNotFound());
         }
     }
 
+    // CREATE 测试
     @Nested
     class Create_validation {
+        // 负例：HTTP 400，缺少邮箱字段
         @Test
         void create_missing_email_returns_400() throws Exception {
             var body = EmployeeDTO.builder().firstName("No").lastName("Email").build();
@@ -139,17 +147,189 @@ public class EmployeeControllerTest {
                     .andExpect(status().isBadRequest());
         }
 
+        // 负例：HTTP 400，邮箱格式不正确
         @Test
-        void create_valid_returns_201() throws Exception {
-            var req = EmployeeDTO.builder().firstName("Dina").lastName("Khan").email("dina@example.com").build();
-            var res = EmployeeDTO.builder().id(10L).firstName("Dina").lastName("Khan").email("dina@example.com").build();
-            when(service.create(any(EmployeeDTO.class))).thenReturn(res);
+        void create_invalid_email_format_returns_400() throws Exception {
+            var req = EmployeeDTO.builder().firstName("Test").lastName("User").email("invalid-email").build();
 
             mvc.perform(post("/api/v1/employees")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(om.writeValueAsString(req)))
-                    .andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.id").value(10L));
+                    .andExpect(status().isBadRequest());
+        }
+
+        // 负例：HTTP 400，缺少姓名字段
+        @Test
+        void create_missing_firstName_returns_400() throws Exception {
+            var req = EmployeeDTO.builder().lastName("User").email("test@example.com").build();
+
+            mvc.perform(post("/api/v1/employees")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(om.writeValueAsString(req)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        // 负例：HTTP 400，缺少姓名字段
+        @Test
+        void create_missing_lastName_returns_400() throws Exception {
+            var req = EmployeeDTO.builder().firstName("Test").email("test@example.com").build();
+
+            mvc.perform(post("/api/v1/employees")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(om.writeValueAsString(req)))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    // UPDATE 测试
+    @Nested
+    class Update_validation {
+        // 负例：HTTP 409，邮箱地址重复导致冲突
+        @Test
+        void update_duplicate_email_returns_409() throws Exception {
+            var req = EmployeeDTO.builder().firstName("Test").lastName("User").email("duplicate@example.com").build();
+            when(service.update(eq(1L), any(EmployeeDTO.class)))
+                    .thenThrow(new com.example.employee.exception.DuplicateEmailException("Email already exists"));
+
+            mvc.perform(put("/api/v1/employees/1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(om.writeValueAsString(req)))
+                    .andExpect(status().isConflict());
+        }
+
+        // 负例：HTTP 400，邮箱格式不正确
+        @Test
+        void update_invalid_email_format_returns_400() throws Exception {
+            var req = EmployeeDTO.builder().firstName("Test").lastName("User").email("invalid-email").build();
+
+            mvc.perform(put("/api/v1/employees/1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(om.writeValueAsString(req)))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    // PATCH 测试
+    @Nested
+    class Partial_Update_validation {
+        // 正例：HTTP 200，只更新部门信息，更新成功
+        @Test
+        void partial_update_department_only_returns_200() throws Exception {
+            var req = EmployeeDTO.builder().departmentId(2L).build(); // 只更新部门ID
+            var res = EmployeeDTO.builder().id(1L).firstName("John").lastName("Doe").email("john@example.com").departmentId(2L).build();
+            when(service.partialUpdate(eq(1L), any(EmployeeDTO.class))).thenReturn(res);
+
+            mvc.perform(patch("/api/v1/employees/1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(om.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.departmentId").value(2L));
+        }
+    }
+
+    // DELETE 测试
+    @Nested
+    class Delete_validation {
+        // 正例：HTTP 204，删除成功
+        @Test
+        void delete_existing_employee_returns_204() throws Exception {
+            doNothing().when(service).delete(1L);
+
+            mvc.perform(delete("/api/v1/employees/1"))
+                    .andExpect(status().isNoContent());
+        }
+
+        // 负例：HTTP 404，删除失败
+        @Test
+        void delete_nonexistent_employee_returns_404() throws Exception {
+            doThrow(new jakarta.persistence.EntityNotFoundException("Employee not found"))
+                    .when(service).delete(999L);
+
+            mvc.perform(delete("/api/v1/employees/999"))
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    // SEARCH 测试
+    @Nested
+    class Search_validation {
+        @Test
+        void search_by_name_returns_200() throws Exception {
+            // 创建真实的Employee对象列表
+            List<EmployeeDTO> employees = List.of(
+                    EmployeeDTO.builder().id(1L).firstName("John").lastName("Doe").email("john@example.com").build()
+            );
+
+            // 创建真实的Page对象
+            Page<EmployeeDTO> page = new org.springframework.data.domain.PageImpl<>(employees);
+            when(service.search(eq("john"), any(Pageable.class))).thenReturn(page);
+
+            mvc.perform(get("/api/v1/employees/search")
+                            .param("query", "john")
+                            .param("page", "0")
+                            .param("size", "10"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content[0].firstName").value("John"));
+        }
+
+        @Test
+        void search_by_email_returns_200() throws Exception {
+            // 创建真实的Employee对象列表
+            List<EmployeeDTO> employees = List.of(
+                    EmployeeDTO.builder().id(1L).firstName("John").lastName("Doe").email("john@example.com").build()
+            );
+
+            // 创建真实的Page对象
+            Page<EmployeeDTO> page = new org.springframework.data.domain.PageImpl<>(employees);
+            when(service.search(eq("example.com"), any(Pageable.class))).thenReturn(page);
+
+            mvc.perform(get("/api/v1/employees/search")
+                            .param("query", "example.com")
+                            .param("page", "0")
+                            .param("size", "10"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content[0].email").value("john@example.com"));
+        }
+
+        @Test
+        void search_case_insensitive_returns_200() throws Exception {
+            // 创建真实的Employee对象列表
+            List<EmployeeDTO> employees = List.of(
+                    EmployeeDTO.builder().id(1L).firstName("John").lastName("Doe").email("john@example.com").build()
+            );
+
+            // 创建真实的Page对象
+            Page<EmployeeDTO> page = new org.springframework.data.domain.PageImpl<>(employees);
+            when(service.search(eq("JOHN"), any(Pageable.class))).thenReturn(page);
+
+            mvc.perform(get("/api/v1/employees/search")
+                            .param("query", "JOHN")
+                            .param("page", "0")
+                            .param("size", "10"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content[0].firstName").value("John"));
+        }
+    }
+
+    // STATS 测试
+    @Nested
+    class Stats_validation {
+        // 正例：统计员工数据，HTTP 200，统计成功
+        @Test
+        void get_stats_returns_200() throws Exception {
+            var stats = EmployeeStatsDTO.builder()
+                    .totalEmployees(10L)
+                    .employeesByDepartment(Map.of(1L, 5L, 2L, 3L))
+                    .employeesWithoutDepartment(2L)
+                    .build();
+            when(service.getStats()).thenReturn(stats);
+
+            mvc.perform(get("/api/v1/employees/stats"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.totalEmployees").value(10))
+                    .andExpect(jsonPath("$.employeesByDepartment.1").value(5))
+                    .andExpect(jsonPath("$.employeesByDepartment.2").value(3))
+                    .andExpect(jsonPath("$.employeesWithoutDepartment").value(2));
         }
     }
 }
