@@ -137,6 +137,28 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(problemDetail);
     }
 
+    @ExceptionHandler(DuplicateCodeException.class)
+    public ResponseEntity<ProblemDetail> handleDuplicateCode(DuplicateCodeException ex, WebRequest request) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problemDetail.setTitle("Duplicate Code Error");
+        problemDetail.setProperty("instance", request.getDescription(false).replace("uri=", ""));
+        problemDetail.setProperty("timestamp", Instant.now().toString());
+        problemDetail.setProperty("traceId", MDC.get("traceId"));
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problemDetail);
+    }
+
+    @ExceptionHandler(DepartmentNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleDepartmentNotFound(DepartmentNotFoundException ex, WebRequest request) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problemDetail.setTitle("Department Not Found");
+        problemDetail.setProperty("instance", request.getDescription(false).replace("uri=", ""));
+        problemDetail.setProperty("timestamp", Instant.now().toString());
+        problemDetail.setProperty("traceId", MDC.get("traceId"));
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ProblemDetail> handleGenericException(Exception ex, WebRequest request) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred");

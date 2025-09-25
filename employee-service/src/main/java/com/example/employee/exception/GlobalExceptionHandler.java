@@ -73,6 +73,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
     }
 
+    @ExceptionHandler(EmployeeNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleEmployeeNotFound(EmployeeNotFoundException ex, WebRequest request) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problemDetail.setTitle("Employee Not Found");
+        problemDetail.setProperty("instance", request.getDescription(false).replace("uri=", ""));
+        problemDetail.setProperty("timestamp", Instant.now().toString());
+        problemDetail.setProperty("traceId", MDC.get("traceId"));
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
+    }
+
     @ExceptionHandler(DuplicateEmailException.class)
     public ResponseEntity<ProblemDetail> handleDuplicateEmail(DuplicateEmailException ex, WebRequest request) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());

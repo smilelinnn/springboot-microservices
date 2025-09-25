@@ -29,8 +29,36 @@ spring:
     baseline-version: 0
     validate-migration-naming: true
 
+  # Kafka configuration
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: department-service-group
+      auto-offset-reset: earliest
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
 server:
   port: 8081
+
+# Feign configuration
+feign:
+  circuitbreaker:
+    enabled: true
+
+# Circuit Breaker configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      department-service:
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        sliding-window-size: 10
+  timelimiter:
+    instances:
+      department-service:
+        timeout-duration: 5s
 
 # Local overrides (these will override Config Server values if needed)
 # Uncomment and modify as needed for local development

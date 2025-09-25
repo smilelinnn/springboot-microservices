@@ -27,6 +27,7 @@ public class EmployeeService {
 
     private final EmployeeRepository repository;
     private final DepartmentClient departmentClient;
+    private final KafkaProducerService kafkaProducerService;
 
     // 3. POST /employees — create; enforce unique email; optional Idempotency-Key request header (treat duplicate keys as safe replays).
     // 简单的内存缓存来存储幂等性键
@@ -106,6 +107,27 @@ public class EmployeeService {
         e = repository.save(e);
         EmployeeDTO result = toDTO(e, true);
 
+        // 发布员工创建事件
+        Map<String, Object> eventData = new HashMap<>();
+        eventData.put("eventType", "EMPLOYEE_CREATED");
+        eventData.put("employeeId", e.getId());
+        eventData.put("email", e.getEmail());
+        eventData.put("departmentId", e.getDepartmentId());
+        eventData.put("firstName", e.getFirstName());
+        eventData.put("lastName", e.getLastName());
+        eventData.put("timestamp", System.currentTimeMillis());
+
+        kafkaProducerService.sendEmployeeEvent("EMPLOYEE_CREATED", eventData);
+
+        // 发送通知事件
+        Map<String, Object> notificationData = new HashMap<>();
+        notificationData.put("eventType", "EMAIL");
+        notificationData.put("recipient", e.getEmail());
+        notificationData.put("message", "欢迎加入公司！您的员工ID是: " + e.getId());
+        notificationData.put("timestamp", System.currentTimeMillis());
+
+        kafkaProducerService.sendNotificationEvent("EMAIL", notificationData);
+
         // 如果有幂等性键，缓存结果
         if (idempotencyKey != null && !idempotencyKey.trim().isEmpty()) {
             idempotencyCache.put(idempotencyKey, result);
@@ -120,6 +142,9 @@ public class EmployeeService {
         Employee existingEmployee = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Employee not found"));
 
+        // 保存旧的部门ID用于事件
+        Long oldDepartmentId = existingEmployee.getDepartmentId();
+
         // 检查邮箱是否重复（排除当前员工）
         if (!existingEmployee.getEmail().equals(dto.getEmail()) &&
                 repository.existsByEmail(dto.getEmail())) {
@@ -133,6 +158,29 @@ public class EmployeeService {
         existingEmployee.setDepartmentId(dto.getDepartmentId());
 
         Employee updatedEmployee = repository.save(existingEmployee);
+
+        // 发布员工更新事件
+        Map<String, Object> eventData = new HashMap<>();
+        eventData.put("eventType", "EMPLOYEE_UPDATED");
+        eventData.put("employeeId", updatedEmployee.getId());
+        eventData.put("email", updatedEmployee.getEmail());
+        eventData.put("oldDepartmentId", oldDepartmentId);
+        eventData.put("newDepartmentId", updatedEmployee.getDepartmentId());
+        eventData.put("timestamp", System.currentTimeMillis());
+
+        kafkaProducerService.sendEmployeeEvent("EMPLOYEE_UPDATED", eventData);
+
+        // 如果部门变更，发送通知
+        if (oldDepartmentId != null && !oldDepartmentId.equals(updatedEmployee.getDepartmentId())) {
+            Map<String, Object> notificationData = new HashMap<>();
+            notificationData.put("eventType", "SYSTEM");
+            notificationData.put("recipient", "hr@company.com");
+            notificationData.put("message", "员工 " + updatedEmployee.getEmail() + " 已从部门 " + oldDepartmentId + " 转移到部门 " + updatedEmployee.getDepartmentId());
+            notificationData.put("timestamp", System.currentTimeMillis());
+
+            kafkaProducerService.sendNotificationEvent("SYSTEM", notificationData);
+        }
+
         return toDTO(updatedEmployee, true); // 更新后总是包含部门信息
     }
 
@@ -142,6 +190,9 @@ public class EmployeeService {
         // 检查员工是否存在
         Employee existingEmployee = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Employee not found"));
+
+        // 保存旧的部门ID用于事件
+        Long oldDepartmentId = existingEmployee.getDepartmentId();
 
         // 部分更新：只更新非null字段
         if (dto.getFirstName() != null) {
@@ -163,16 +214,59 @@ public class EmployeeService {
         }
 
         Employee updatedEmployee = repository.save(existingEmployee);
+
+        // 发布员工更新事件
+        Map<String, Object> eventData = new HashMap<>();
+        eventData.put("eventType", "EMPLOYEE_UPDATED");
+        eventData.put("employeeId", updatedEmployee.getId());
+        eventData.put("email", updatedEmployee.getEmail());
+        eventData.put("oldDepartmentId", oldDepartmentId);
+        eventData.put("newDepartmentId", updatedEmployee.getDepartmentId());
+        eventData.put("timestamp", System.currentTimeMillis());
+
+        kafkaProducerService.sendEmployeeEvent("EMPLOYEE_UPDATED", eventData);
+
+        // 如果部门变更，发送通知
+        if (oldDepartmentId != null && !oldDepartmentId.equals(updatedEmployee.getDepartmentId())) {
+            Map<String, Object> notificationData = new HashMap<>();
+            notificationData.put("eventType", "SYSTEM");
+            notificationData.put("recipient", "hr@company.com");
+            notificationData.put("message", "员工 " + updatedEmployee.getEmail() + " 已从部门 " + oldDepartmentId + " 转移到部门 " + updatedEmployee.getDepartmentId());
+            notificationData.put("timestamp", System.currentTimeMillis());
+
+            kafkaProducerService.sendNotificationEvent("SYSTEM", notificationData);
+        }
+
         return toDTO(updatedEmployee, true); // 部分更新后总是包含部门信息
     }
 
     // 6. DELETE /employees/{id} — delete (204).
     @Transactional
     public void delete(Long id) {
-        // 检查员工是否存在
-        if (!repository.existsById(id)) {
-            throw new EntityNotFoundException("Employee not found");
-        }
+        // 检查员工是否存在并获取员工信息
+        Employee employee = repository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Employee not found"));
+
+        // 发布员工删除事件
+        Map<String, Object> eventData = new HashMap<>();
+        eventData.put("eventType", "EMPLOYEE_DELETED");
+        eventData.put("employeeId", employee.getId());
+        eventData.put("email", employee.getEmail());
+        eventData.put("departmentId", employee.getDepartmentId());
+        eventData.put("firstName", employee.getFirstName());
+        eventData.put("lastName", employee.getLastName());
+        eventData.put("timestamp", System.currentTimeMillis());
+
+        kafkaProducerService.sendEmployeeEvent("EMPLOYEE_DELETED", eventData);
+
+        // 发送通知事件
+        Map<String, Object> notificationData = new HashMap<>();
+        notificationData.put("eventType", "SYSTEM");
+        notificationData.put("recipient", "hr@company.com");
+        notificationData.put("message", "员工 " + employee.getEmail() + " 已离职，请处理相关手续");
+        notificationData.put("timestamp", System.currentTimeMillis());
+
+        kafkaProducerService.sendNotificationEvent("SYSTEM", notificationData);
 
         // 删除员工
         repository.deleteById(id);
