@@ -1,0 +1,41 @@
+# Product Service Application Configuration
+# Most configuration is now loaded from Config Server
+# This file only contains local overrides and fallback values
+
+spring:
+  application:
+    name: product-service
+  # Config Server connection (Spring Cloud 2022.0.x format)
+  config:
+    import: "configserver:http://localhost:8888"
+  cloud:
+    config:
+      enabled: true
+      fail-fast: true
+
+  # Redis configuration
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+
+  # Cache configuration
+  cache:
+    type: redis
+    redis:
+      time-to-live: 300000  # 5 minutes in milliseconds
+      cache-null-values: false
+
+server:
+  port: 8083
+
+# Local overrides (these will override Config Server values if needed)
+# Uncomment and modify as needed for local development

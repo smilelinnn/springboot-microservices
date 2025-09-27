@@ -10,19 +10,49 @@ spring:
       fail-fast: true
     gateway:
       routes:
-        - id: employee-service
+        # employee-service
+        - id: employee-service-v1
+          uri: lb://EMPLOYEE-SERVICE
+          predicates:
+            - Path=/api/v1/employees/**
+
+        - id: employee-service-v2
+          uri: lb://EMPLOYEE-SERVICE
+          predicates:
+            - Path=/api/v2/employees/**
+
+        - id: employee-service-default
           uri: lb://EMPLOYEE-SERVICE
           predicates:
             - Path=/employees/**
           filters:
-            - RewritePath=/employees(?<segment>/?.*), /api/v1/employees${segment}
+            - RewritePath=/employees(?<segment>/?.*), /api/v2/employees${segment}
 
-        - id: department-service
+        # department-service
+        - id: department-service-v1
+          uri: lb://DEPARTMENT-SERVICE
+          predicates:
+            - Path=/api/v1/departments/**
+
+        - id: department-service-v2
+          uri: lb://DEPARTMENT-SERVICE
+          predicates:
+            - Path=/api/v2/departments/**
+
+        - id: department-service-default
           uri: lb://DEPARTMENT-SERVICE
           predicates:
             - Path=/departments/**
           filters:
-            - RewritePath=/departments(?<segment>/?.*), /api/v1/departments${segment}
+            - RewritePath=/departments(?<segment>/?.*), /api/v2/departments${segment}
+
+        # product-service
+        - id: product-service-default
+          uri: lb://PRODUCT-SERVICE
+          predicates:
+            - Path=/products/**
+          filters:
+            - RewritePath=/products(?<segment>/?.*), /api/v2/products${segment}
 
 
 server:

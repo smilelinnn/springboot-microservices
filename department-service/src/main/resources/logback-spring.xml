@@ -9,9 +9,9 @@
 
     <!-- File appender for centralized logging -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>department-service/logs/department-service.log</file>
+        <file>logs/department-service.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>department-service/logs/department-service.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>logs/department-service.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>
         </rollingPolicy>
         <encoder>
