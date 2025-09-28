@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-// @RestControllerAdvice 是 Spring 的一个特殊注解
+// @RestControllerAdvice 是 Spring 的一个特殊注解 = @ControllerAdvice + @ResponseBody
 // 意思是"这个类会监听整个应用程序中的所有控制器"
 // 当任何控制器发生异常时，Spring 会自动调用这个类中对应的方法
 @RestControllerAdvice

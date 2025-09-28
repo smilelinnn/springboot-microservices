@@ -78,7 +78,7 @@ public class DepartmentControllerV2 {
         Map<String, Object> notificationData = new HashMap<>();
         notificationData.put("eventType", "SYSTEM");
         notificationData.put("recipient", "admin@company.com");
-        notificationData.put("message", "新部门已创建: " + savedDepartment.getName() + " (" + savedDepartment.getCode() + ")");
+        notificationData.put("message", "New Department Created: " + savedDepartment.getName() + " (" + savedDepartment.getCode() + ")");
         notificationData.put("timestamp", System.currentTimeMillis());
 
         kafkaProducerService.sendNotificationEvent("SYSTEM", notificationData);
@@ -201,7 +201,7 @@ public class DepartmentControllerV2 {
         Map<String, Object> notificationData = new HashMap<>();
         notificationData.put("eventType", "SYSTEM");
         notificationData.put("recipient", "admin@company.com");
-        notificationData.put("message", "部门已删除: " + department.getName() + " (" + department.getCode() + ")，请处理相关员工");
+        notificationData.put("message", "Department has been deleted: " + department.getName() + " (" + department.getCode() + ")，请处理相关员工");
         notificationData.put("timestamp", System.currentTimeMillis());
 
         kafkaProducerService.sendNotificationEvent("SYSTEM", notificationData);

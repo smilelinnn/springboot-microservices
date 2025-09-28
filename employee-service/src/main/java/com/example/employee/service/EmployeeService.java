@@ -123,7 +123,7 @@ public class EmployeeService {
         Map<String, Object> notificationData = new HashMap<>();
         notificationData.put("eventType", "EMAIL");
         notificationData.put("recipient", e.getEmail());
-        notificationData.put("message", "欢迎加入公司！您的员工ID是: " + e.getId());
+        notificationData.put("message", "Welcome! Your employee ID is: " + e.getId());
         notificationData.put("timestamp", System.currentTimeMillis());
 
         kafkaProducerService.sendNotificationEvent("EMAIL", notificationData);
@@ -263,7 +263,7 @@ public class EmployeeService {
         Map<String, Object> notificationData = new HashMap<>();
         notificationData.put("eventType", "SYSTEM");
         notificationData.put("recipient", "hr@company.com");
-        notificationData.put("message", "员工 " + employee.getEmail() + " 已离职，请处理相关手续");
+        notificationData.put("message", "员工 " + employee.getEmail() + " has resigned. Please proceed with the relevant formalities.");
         notificationData.put("timestamp", System.currentTimeMillis());
 
         kafkaProducerService.sendNotificationEvent("SYSTEM", notificationData);
